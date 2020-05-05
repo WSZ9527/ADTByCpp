@@ -20,41 +20,29 @@ protected:
 	//线性表长度增长因子，默认为0，如果为0，扩容时容量翻倍，否则每次扩容增长因子个内存空间
 public:
 	//随机访问迭代器类
-	class Iterator
+	class _ArrayList_Const_Iterator
 	{
-		T* m_position;
 	public:
-		using iterator_category = std::random_access_iterator_tag;
+		using iterator_concept = std::random_access_iterator_tag;
 		using value_type = T;
 		using difference_type = ptrdiff_t;
-		using pointer = T*;
-		using reference = T&;
-		inline Iterator(T* _position = nullptr)
+		using pointer = const value_type*;
+		using reference = const value_type&;
+		inline _ArrayList_Const_Iterator(pointer _position)
 			:m_position(_position) {}
 
-		inline T& operator*() { return *this->m_position; }
+		inline reference operator*() const { return *this->m_position; }
 
-		inline T* operator->() { return this->m_position; }
-
-		inline const T& operator*()const { return *this->m_position; }
-
-		inline const T* operator->()const { return this->m_position; }
-
-		void swap(Iterator& _right)
-		{
-			auto tmpIt = _right;
-			_right->m_position = this->m_position;
-			this->m_position = tmpIt.m_position;
-		}
+		inline pointer operator->() const { return this->m_position; }
 
 		//迭代器向后，前置++
-		inline Iterator& operator++()
+		inline _ArrayList_Const_Iterator& operator++()
 		{
 			++this->m_position;
 			return *this;
 		}
 		//迭代器向后，后置++
-		inline Iterator operator++(int)
+		inline _ArrayList_Const_Iterator operator++(int)
 		{
 			Iterator old = *this;
 			++this->m_position;
@@ -62,13 +50,13 @@ public:
 		}
 
 		//迭代器向前，前置--
-		inline Iterator& operator--()
+		inline _ArrayList_Const_Iterator& operator--()
 		{
 			--this->m_position;
 			return *this;
 		}
 		//迭代器向前，后置--
-		inline Iterator operator--(int)
+		inline _ArrayList_Const_Iterator operator--(int)
 		{
 			Iterator old = *this;
 			--this->m_position;
@@ -76,7 +64,7 @@ public:
 		}
 		
 		//重载-操作运算符，支持向前随机迭代
-		Iterator operator-(int _length) const
+		_ArrayList_Const_Iterator operator-(int _length) const
 		{
 			if (_length < 0)
 			{
@@ -85,11 +73,11 @@ public:
 				throw IllegalParamterValue(os);
 			}
 
-			return Iterator(this->m_position - _length);
+			return _ArrayList_Const_Iterator(this->m_position - _length);
 		}
 
 		//重载+操作运算符，支持向后随机迭代
-		Iterator operator+(int _length) const
+		_ArrayList_Const_Iterator operator+(int _length) const
 		{
 			if (_length < 0)
 			{
@@ -98,29 +86,17 @@ public:
 				throw IllegalParamterValue(os);
 			}
 
-			return Iterator(this->m_position + _length);
+			return _ArrayList_Const_Iterator(this->m_position + _length);
 		}
 
 		//重载-操作运算符，计算2迭代器之间的距离
-		inline int operator-(const Iterator& _it) const
+		inline difference_type operator-(const _ArrayList_Const_Iterator& _it) const
 		{
 			return ((int)(this->m_position - _it.m_position));
 		}
 
 		//重载数组操作符，支持随机访问
-		T& operator[](int _index)
-		{
-			if (_index < 0)
-			{
-				std::ostringstream os;
-				os << "_index = " << _index << " _index must be >= 0";
-				throw IllegalParamterValue(os);
-			}
-			return this->m_position[_index];
-		}
-
-		//重载数组操作符，支持随机访问
-		const T& operator[](int _index) const
+		reference operator[](int _index) const
 		{
 			if (_index < 0)
 			{
@@ -132,20 +108,129 @@ public:
 		}
 
 		//重载<操作运算符
-		inline bool operator<(const Iterator& _it) const { return this->m_position < _it.m_position; }
+		inline bool operator<(const _ArrayList_Const_Iterator& _it) const { return this->m_position < _it.m_position; }
 
 		//重载>操作运算符
-		inline bool operator>(const Iterator& _it) const { return this->m_position > _it.m_position; }
+		inline bool operator>(const _ArrayList_Const_Iterator& _it) const { return this->m_position > _it.m_position; }
+
+
+		//重载=<操作运算符
+		inline bool operator<=(const _ArrayList_Const_Iterator& _it) const { return this->m_position <= _it.m_position; }
+
+		//重载>=操作运算符
+		inline bool operator>=(const _ArrayList_Const_Iterator& _it) const { return this->m_position >= _it.m_position; }
 
 		//重载!=操作运算符
-		inline bool operator!=(const Iterator& _it)const { return this->m_position != _it.m_position; }
+		inline bool operator!=(const _ArrayList_Const_Iterator& _it)const { return this->m_position != _it.m_position; }
 
 		//重载==操作运算符
-		inline bool operator==(const Iterator& _it)const { return this->m_position == _it.m_position; }
+		inline bool operator==(const _ArrayList_Const_Iterator& _it)const { return this->m_position == _it.m_position; }
+
+		protected:
+			pointer m_position;
+		};
+
+	class _ArrayList_Iterator : _ArrayList_Const_Iterator
+	{
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = T;
+		using difference_type = ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+		using _Mybase = _ArrayList_Const_Iterator;
+		inline _ArrayList_Iterator(T* _position)
+			:_Mybase(_position) {}
+		inline reference operator*() const { return const_cast<reference>(_Mybase::operator*()); }
+
+		inline pointer operator->() const { return const_cast<pointer>(_Mybase::operator->()); }
+	
+		void swap(_ArrayList_Iterator& _right) const
+		{
+			auto tmpIt = _right;
+			_right->m_position = this->m_position;
+			this->m_position = tmpIt.m_position;
+		}
+
+		//迭代器向后，前置++
+		inline _ArrayList_Iterator& operator++()
+		{
+			_Mybase::operator++();
+			return *this;
+		}
+		//迭代器向后，后置++
+		inline _ArrayList_Iterator operator++(int)
+		{
+			Iterator old = *this;
+			_Mybase::operator++();
+			return old;
+		}
+
+		//迭代器向前，前置--
+		inline _ArrayList_Iterator& operator--()
+		{
+			_Mybase::operator--();
+			return *this;
+		}
+		//迭代器向前，后置--
+		inline _ArrayList_Iterator operator--(int)
+		{
+			auto old = *this;
+			_Mybase::operator--();
+			return old;
+		}
+
+		//重载-操作运算符，支持向前随机迭代
+		_ArrayList_Iterator operator-(int _length) const
+		{
+			_Mybase::operator-(_length);
+			return *this;
+		}
+
+		//重载+操作运算符，支持向后随机迭代
+		_ArrayList_Iterator operator+(int _length) const
+		{
+			_Mybase::operator+(_length);
+			return *this;
+		}
+
+		//重载-操作运算符，计算2迭代器之间的距离
+		inline difference_type operator-(const _ArrayList_Iterator& _it) const
+		{
+			return _Mybase::operator-(_it);
+		}
+
+		//重载数组操作符，支持随机访问
+		reference operator[](int _index) const
+		{
+			return const_cast<reference>(_Mybase::operator [](_index));
+		}
+
+		//重载<操作运算符
+		inline bool operator<(const _ArrayList_Iterator& _it) const
+		{  
+			return _Mybase::operator<(_it);
+		}
+
+		//重载>操作运算符
+		inline bool operator>(const _ArrayList_Iterator& _it) const { return _Mybase::operator>(_it); }
+
+
+		//重载=<操作运算符
+		inline bool operator<=(const _ArrayList_Iterator& _it) const { return _Mybase::operator<=(_it); }
+
+		//重载>=操作运算符
+		inline bool operator>=(const _ArrayList_Iterator& _it) const { return _Mybase::operator>=(_it); }
+
+		//重载!=操作运算符
+		inline bool operator!=(const _ArrayList_Iterator& _it)const { return _Mybase::operator!=(_it); }
+
+		//重载==操作运算符
+		inline bool operator==(const _ArrayList_Iterator& _it)const { return _Mybase::operator==(_it); }
 	};
 
-	using Iterator = typename ArrayList<T>::Iterator;
-
+	using Iterator = typename ArrayList<T>::_ArrayList_Iterator;
+	using Const_Iterator = typename ArrayList<T>::_ArrayList_Const_Iterator;
 	ArrayList()
 		:m_arrayLength(DEFAULT_CAPATITY), m_increase(0)
 	{
@@ -615,6 +700,13 @@ public:
 
 	//获取尾迭代器
 	virtual Iterator end() const { return Iterator(this->m_element + this->m_listsize); }
+
+
+	//获取首迭代器
+	virtual Const_Iterator cbegin() const { return Const_Iterator(this->m_element); }
+
+	//获取尾迭代器
+	virtual Const_Iterator cend() const { return Const_Iterator(this->m_element + this->m_listsize); }
 
 	//交替合并2个表的元素
 	virtual ArrayList<T>& meld(const ArrayList<T>& _leftList, const ArrayList<T>& _rightList)

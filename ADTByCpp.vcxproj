@@ -142,6 +142,7 @@
     <ClInclude Include="ArrayListTest.hpp" />
     <ClInclude Include="ArrayList_New.hpp" />
     <ClInclude Include="ArrayList_NewTest.hpp" />
+    <ClInclude Include="CircularArrayList.hpp" />
     <ClInclude Include="IllegalParamterValue.hpp" />
     <ClInclude Include="LinearList.hpp" />
   </ItemGroup>

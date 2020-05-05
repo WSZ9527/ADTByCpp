@@ -5,7 +5,7 @@ template <class T>
 class ArrayList_New : public ArrayList<T>
 {
 public:
-	using Iterator = ArrayList<T>::Iterator;
+	using Iterator = typename ArrayList<T>::_ArrayList_Iterator;
 	inline ArrayList_New()
 		:ArrayList<T>() {}
 
@@ -63,7 +63,6 @@ public:
 		}
 	}
 
-
 	virtual void removeRange(Iterator _begin, Iterator _end) override
 	{
 		if (_end < _begin)
@@ -105,7 +104,6 @@ public:
 			this->m_listsize -= removeLength;
 		}
 	}
-
 
 	virtual void removeRange(Iterator _begin) override
 	{
