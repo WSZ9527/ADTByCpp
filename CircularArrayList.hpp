@@ -1,321 +1,331 @@
 #pragma once
 #include <iterator>
-
+#include <iostream>
+#include "IllegalParamterValue.hpp"
 template <class T>
 class CircularArrayList
 {
-protected:
-	enum {DEFAULT_STEP = 7};
-	enum { DEFAULT_CAPATITY = 10, MIN_INCREASE = 1 };
-		//公式中的步长
-	int m_first;
-		//线性表首元素
-	int m_last;
-		//线性表尾元素
-	int m_step;
-		//公式中的步长
-
-	T* m_element;
-	//一维数组
-	int m_arrayLength;
-	//一维数组的容量
-	int m_listsize;
-	//线性表的元素个数
-	int m_increase;
-	//线性表长度增长因子，默认为0，如果为0，扩容时容量翻倍，否则每次扩容增长因子个内存空间
-	void createList()
-	{
-		this->m_element = new T[this->m_arrayLength];
-		this->m_first = m_step % this->m_arrayLength;
-		this->m_last = (m_step + 1) % this->m_arrayLength;
-	}
 public:
-	using Iterator = typename CircularArrayList<T>::Iterator;
-	class Iterator
+	using value_type = T;
+	using reference = value_type&;
+	using const_reference = const T&;
+	using pointer = T*;
+	using const_pointer = const T*;
+	using size_type = unsigned int;
+	using difference_type = unsigned int;
+	using position_type = unsigned int;
+	CircularArrayList() 
 	{
-	protected:
-		T* m_position;
+		this->m_container =  this->allocator(this->m_capacity);
+	}
+
+	explicit CircularArrayList(size_type _capacity)
+	{
+		if (_capacity > this->DEFAULT_CAPACITY)
+			this->m_capacity = _capacity;
+		this->m_container = this->allocator(this->m_capacity);
+	}
+
+	//全局友元输出流符号重载
+	friend std::ostream& operator<<(ostream& _out, const CircularArrayList<T>& _list)
+	{
+		for (auto& e : _list)
+			_out << e << " ";
+		return _out;
+	}
+
+	//双向迭代器
+	class _CircularArrayList_Const_Iterator
+	{
 	public:
-		//双向迭代器标签
 		using iterator_category = std::bidirectional_iterator_tag;
-		using value_type = T;
-		using difference_type = ptrdiff_t;
-		using pointer = const T*;
-		using reference = const T&;
-		inline Iterator(T* _position)
-			: m_position(_position) {}
+		using value_type = typename CircularArrayList<T>::value_type;
+		using const_reference = typename CircularArrayList<T>::const_reference;
+		using pointer = typename CircularArrayList<T>::pointer;
+		using const_pointer = typename CircularArrayList<T>::const_pointer;
+		using size_type = typename CircularArrayList<T>::size_type;
+		using difference_type = typename CircularArrayList<T>::difference_type;
+		using position_type = typename CircularArrayList<T>::position_type;
 
-		inline Iterator(const Iterator& _iter)
+		_CircularArrayList_Const_Iterator(pointer _pointer, position_type _position,difference_type _step, size_type _capacity)
+			:m_pointer(_pointer), m_step(_step),m_position(_position), m_capacity(_capacity) {}
+
+		virtual ~_CircularArrayList_Const_Iterator() {}
+
+		//重载*取值操作符
+		const_reference operator*() const 
 		{
-			this->m_position = _iter.m_position;
+			this->checkPosition(this->m_position);
+			return this->m_pointer[this->getRealPosition()];
+		}
+		//重载指针操作符
+		const_pointer operator->() const 
+		{
+			this->checkPosition(this->m_position);
+			return this->m_pointer + this->getRealPosition();
 		}
 
-		inline Iterator& operator=(const Iterator& _iter)
+		//重载前置自加操作符
+		_CircularArrayList_Const_Iterator& operator++()
 		{
-			if(&_iter != this)
-				this->m_position = _iter.m_position;
+			this->checkPosition(++this->m_position);
+			return *this;
 		}
 
-		inline T& operator*()
+		//重载前置减减操作符
+		_CircularArrayList_Const_Iterator& operator--()
 		{
-			return *this->m_position;
+			this->checkPosition(--this->m_position);
+			return *this;
 		}
 
-		inline const T& operator*()const
+		_CircularArrayList_Const_Iterator operator-(difference_type _step) const
 		{
-			return *this->m_position;
+			return _CircularArrayList_Const_Iterator(this->m_pointer, this->m_position - _step, this->m_step, this->m_capacity);
 		}
 
-		inline T* operator->()
+		_CircularArrayList_Const_Iterator operator+(difference_type _step) const
 		{
-			return this->m_position;
+			return _CircularArrayList_Const_Iterator(this->m_pointer, this->m_position + _step, this->m_step, this->m_capacity);
 		}
+
+		bool operator>(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position > _rightIter.m_position;
+		}
+
+		bool operator>=(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position >= _rightIter.m_position;
+		}
+
+		bool operator<(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position < _rightIter.m_position;
+		}
+
+		bool operator<=(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position <= _rightIter.m_position;
+		}
+
+		bool operator!=(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position != _rightIter.m_position;
+		}
+
+		bool operator==(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			this->checkIter(_rightIter);
+			return this->m_position == _rightIter.m_position;
+		}
+
+	protected:
+		pointer m_pointer;
+		difference_type m_step;
+		size_type m_capacity;
+		position_type m_position;
+
+		inline void checkPosition(position_type _position) const
+		{
+			if (_position < 0 || _position >= this->m_capacity)
+				throw IllegalParamterValue("iterator is falied");
+			//else if (_position > this->size())
+				//throw IllegalParamterValue("the _position must be in the list range");
+		}
+
+		inline position_type getRealPosition() const
+		{
+			return this->getRealPosition(this->m_position);
+		}
+
+		inline position_type getRealPosition(position_type _position) const
+		{
+			return this->getRealPosition(_position, this->m_step, this->m_capacity);
+		}
+
+		inline position_type getRealPosition(position_type _position, difference_type _step, size_type _capacity) const
+		{
+			//checkPosition(_position);
+			return (_position + _step) % _capacity;
+		}
+
+		inline void checkIter(const _CircularArrayList_Const_Iterator& _rightIter) const
+		{
+			if (this->m_pointer != _rightIter.m_pointer || this->m_step != _rightIter.m_step || this->m_capacity != _rightIter.m_capacity)
+				throw IllegalParamterValue("iterator is falied");
+		}		
 	};
-	inline CircularArrayList()
-		:m_step(this->DEFAULT_STEP)
+	using Iterator = typename CircularArrayList<T>::_CircularArrayList_Const_Iterator;
+	//根据索引将元素插入线性表中
+	virtual void insert(position_type _position, const_reference _element)
 	{
-		this->m_arrayLength = this->DEFAULT_CAPATITY;
-		createList();
-	}
+		
+		if (this->size() == this->m_capacity)
+		{
+			//扩容
+			increaseMemroySpace();
+		}
 
-	inline CircularArrayList(int _initCapacity, int _increase = 0, int _step = 0)
-	{
-		this->m_arrayLength = _initCapacity > this->DEFAULT_CAPATITY ? _initCapacity : this->DEFAULT_CAPATITY;
-		this->m_increase = _increase > this->MIN_INCREASE ? _increase : this->MIN_INCREASE;
-		this->m_step = _step > 0 ? _step : this->DEFAULT_STEP;
-
-		createList();
-	}
-
-	virtual ~CircularArrayList() 
-	{
-		delete[] this->m_element;
-	}
-
-	virtual bool operator ==(const ArrayList<T>& _list) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
+		this->checkPosition(_position);
 
 
-	virtual bool operator !=(const ArrayList<T>& _list) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual bool operator <(const ArrayList<T>& _list) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual const T& operator [](int _index) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual T& operator [](int _index) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual bool empty() const override
-	{
-		return this->m_first == this->m_last - 1s;
-	}
-
-	//index = (index + step) % length ,,last = (step + size) % length
-	virtual int size() const override
-	{
-		if (this->m_last == this->m_first)
-			return 0;
-		else if (this->m_last > this->m_first)
-			return this->m_last - this->m_first;
+		++this->m_listsize;
+		this->m_last = (this->m_listsize + this->m_step + 1) % this->m_capacity;
+		//策略选择线性表元素移动方向
+		auto realPosition = this->getRealPosition(_position);
+		auto lastStep = this->dabs(realPosition - this->m_last);
+		auto firstStep = this->dabs(realPosition - this->m_first);
+		if (lastStep > firstStep)
+		{
+			//离头部比较近，左移
+			auto iter = this->getIterator(_position);
+			auto iterEnd = this->getIterator(_position + lastStep);
+			auto desIter = this->getIterator();
+		}
 		else
-			return this->m_last + this->m_step + 1;
+		{
+			//离尾部比较近，右移
+			auto iter = this->getIterator(_position + lastStep); 
+			auto iterEnd = this->getIterator(_position);
+			auto desIter = this->getIterator();
+
+		}
+		//if(realPosition)
+		this->m_container[this->getRealPosition(_position)] = _element;
 	}
-
-
-	virtual T& get(int _index) override
+	//在线性表的尾部插入元素
+	virtual void push_back(const_reference _element)
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		this->insert(this->m_listsize, _element);
 	}
-
-
-	virtual const T& get(int _index) const override
+	//根据索引获取线性表元素的引用
+	virtual reference indexOf(position_type _position) const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		this->checkPosition(_position);
+		return this->m_container[this->getRealPosition(_position)];
 	}
-
-
-	virtual int indexOf(const T& _element) const override
+	//重载数组操作符，方便遍历线性表元素
+	reference operator[](position_type _position) const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		return this->indexOf(_position);
 	}
-
-
-	virtual void erase(int _index) override
+	//获取线性表元素个数
+	virtual size_type size() const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		//return this->m_last == this->m_first ? this->m_capacity:
+			//this->m_last < this->m_first ? (this->m_capacity - this->m_first + this->m_last + 1) : (this->m_last - this->m_first - 1);
+		return this->m_listsize;
 	}
-
-
-	virtual void insert(int _index, const T& _element) override
+	//获取线性表在内存中的实际分配的大小
+	virtual size_type capacity() const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		return this->m_capacity;
 	}
-
-
-	virtual inline int capacity() const override
+	//获取首迭代器
+	virtual Iterator begin() const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		return this->getIterator();
 	}
-
-
-	virtual void push_back(const T& _element) override
+	//获取尾迭代器
+	virtual Iterator end() const
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		return this->getIterator(this->m_listsize);
 	}
-
-
-	virtual void pop_back() override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void swap(ArrayList<T>& _list) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void reserve(int _capacity) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual T& set(int _index, const T& _element) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void clear() override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void removeRange(Iterator _begin, Iterator _end) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void removeRange(Iterator _begin) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual int lastIndexOf(const T& _element) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void reverse() override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void leftShift(int _shift) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void circularShift(int _shift) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void half() override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void trimToSize() override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual bool equal(const ArrayList<T>& _list) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual Iterator begin() const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual Iterator end() const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual ArrayList<T>& meld(const ArrayList<T>& _leftList, const ArrayList<T>& _rightList) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual ArrayList<T>& merge(const ArrayList<T>& _leftList, const ArrayList<T>& _rightList) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void split(ArrayList<T>& _leftList, ArrayList<T>& _rightList) const override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-
-	virtual void setSize(int _capacity) override
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
+	virtual ~CircularArrayList() {}
 protected:
-	virtual void changeLength(T*& _arr, int& _oldLength, int _newLength) override
+	//一些默认属性
+	enum 
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		DEFAULT_CAPACITY = 10,
+		DEFAULT_STEP = 7,
+		DEFAULT_CONDITION = 5
+	};
+	
+	size_type m_capacity = this->DEFAULT_CAPACITY;
+	size_type m_listsize = 0;
+	size_type m_condition = 0;
+	position_type m_last = this->DEFAULT_STEP + 1;
+	position_type m_first = this->DEFAULT_STEP;
+	difference_type m_step = this->DEFAULT_STEP;
+	pointer m_container;
+
+	inline Iterator getIterator(position_type _position = 0) const
+	{
+		return Iterator(this->m_container, _position, this->m_step, this->m_capacity);
 	}
 
-
-	virtual void checkIndex(int _index) const override
+	inline void allocatorCapacityVerify(size_type _size)
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		if (_size < 0)
+			throw IllegalParamterValue("the size must be > 0");
 	}
 
-
-	virtual void iterSwap(Iterator& _leftIter, Iterator _rightIter) override
+	inline pointer allocator(size_type _capaticy)
 	{
-		throw std::logic_error("The method or operation is not implemented.");
+		this->allocatorCapacityVerify(_capaticy);
+		return new value_type[_capaticy];
 	}
 
+	inline void checkPosition(position_type _position) const
+	{
+		if (_position < 0)
+			throw IllegalParamterValue("the _position must be > 0");
+		else if(_position > this->size())
+			throw IllegalParamterValue("the _position must be in the list range");
+	}
+
+	inline position_type getRealPosition(position_type _position) const
+	{
+		return this->getRealPosition(_position, this->m_step, this->m_capacity);
+	}
+
+	inline position_type getRealPosition(position_type _position, difference_type _step, size_type _capacity) const
+	{
+		checkPosition(_position);
+		return (_position + _step) % _capacity;
+	}
+
+	//重新分配内存
+	void reAllocator(size_type _capaticy)
+	{
+		this->allocatorCapacityVerify(_capaticy);
+		_capaticy = _capaticy > this->DEFAULT_CAPACITY ? _capaticy : this->DEFAULT_CAPACITY;
+
+		auto newContainer = allocator(_capaticy);
+		for (position_type i = 0; i < this->size(); ++i)
+		{
+			newContainer[this->getRealPosition(i, this->m_step, _capaticy)] = this->m_container[this->getRealPosition(i)];
+		}
+
+		delete[]this->m_container;
+		this->m_container = newContainer;
+	}
+
+	//拓展内存
+	void increaseMemroySpace()
+	{
+		size_type newCapacity = this->m_capacity + (this->m_capacity >> 1);
+		if (this->m_condition >= this->DEFAULT_CONDITION)
+			newCapacity = this->m_capacity + this->m_condition;
+		this->reAllocator(newCapacity);
+
+		this->m_capacity = newCapacity;
+	}
+
+	void iterSwap(Iterator& _leftIter, Iterator& _rightIter)
+	{
+		std::swap(const_cast<reference>(*_leftIter), const_cast<reference>(*_rightIter));
+	}
+
+	//取绝对值
+	inline difference_type dabs(int _step) const 
+	{
+		return _step > 0 ? _step : -_step;
+	}
 };

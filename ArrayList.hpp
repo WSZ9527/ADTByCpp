@@ -139,7 +139,7 @@ public:
 		using pointer = value_type*;
 		using reference = value_type&;
 		using _Mybase = _ArrayList_Const_Iterator;
-		inline _ArrayList_Iterator(T* _position)
+		inline _ArrayList_Iterator(const T* _position)
 			:_Mybase(_position) {}
 		inline reference operator*() const { return const_cast<reference>(_Mybase::operator*()); }
 
@@ -183,15 +183,27 @@ public:
 		//重载-操作运算符，支持向前随机迭代
 		_ArrayList_Iterator operator-(int _length) const
 		{
-			_Mybase::operator-(_length);
-			return *this;
+			if (_length < 0)
+			{
+				std::ostringstream os;
+				os << "_length = " << _length << " must be >= 0";
+				throw IllegalParamterValue(os);
+			}
+
+			return _ArrayList_Iterator(this->m_position - _length);
 		}
 
 		//重载+操作运算符，支持向后随机迭代
 		_ArrayList_Iterator operator+(int _length) const
 		{
-			_Mybase::operator+(_length);
-			return *this;
+			if (_length < 0)
+			{
+				std::ostringstream os;
+				os << "_length = " << _length << " must be >= 0";
+				throw IllegalParamterValue(os);
+			}
+
+			return _ArrayList_Iterator(this->m_position + _length);
 		}
 
 		//重载-操作运算符，计算2迭代器之间的距离
