@@ -1,6 +1,6 @@
 ﻿#pragma once
 template <class T>
-class linearList
+class LinearList
 {
 	virtual bool empty() const = 0;
 		//返回true,说明线性表为空

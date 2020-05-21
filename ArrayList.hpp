@@ -6,7 +6,7 @@
 #include <iterator>
 #include <iostream>
 template <class T>
-class ArrayList : public linearList<T>
+class ArrayList : public LinearList<T>
 {
 protected:
 	enum{DEFAULT_CAPATITY = 10, MIN_INCREASE = 1};

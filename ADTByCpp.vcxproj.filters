@@ -39,6 +39,21 @@
     <ClInclude Include="CircularArrayList.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CircularArrayListTest.hpp">
+      <Filter>TestUtil</Filter>
+    </ClInclude>
+    <ClInclude Include="ChainNode.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Chain.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ChainTest.hpp">
+      <Filter>TestUtil</Filter>
+    </ClInclude>
+    <ClInclude Include="CircularListWithHeader.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
